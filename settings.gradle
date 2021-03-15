@@ -1,0 +1,5 @@
+/* Currently this project consists of a single project. Codes for various cloud
+ * providers will be organized into subprojects.
+ */
+
+rootProject.name = 'cloud-keytool'
