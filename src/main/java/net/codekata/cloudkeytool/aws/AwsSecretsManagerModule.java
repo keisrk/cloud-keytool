@@ -14,7 +14,7 @@ import software.amazon.awssdk.profiles.ProfileProperty;
 import software.amazon.awssdk.regions.Region;
 
 /** DI for AWS Secrets Manager backend. */
-public class AwsSecretsManagerModule extends AbstractModule {
+public final class AwsSecretsManagerModule extends AbstractModule {
   private static final Logger logger =
       (Logger) LoggerFactory.getLogger(AwsSecretsManagerModule.class);
   private final String profile;
@@ -24,7 +24,7 @@ public class AwsSecretsManagerModule extends AbstractModule {
   }
 
   @Override
-  protected void configure() {
+  protected final void configure() {
     bind(KeyStoreService.class).to(AwsKeyStoreService.class);
   }
 

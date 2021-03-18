@@ -21,11 +21,11 @@ final class KeyRepository {
   }
 
   /** TODO: Use lombok. */
-  KeyStore keyStore() {
+  final KeyStore keyStore() {
     return ks;
   }
 
-  Iterator<String> aliases() {
+  final Iterator<String> aliases() {
     final var aliases = now(() -> ks.aliases()).getOrElse(Collections::emptyEnumeration);
     return forEnumeration(aliases);
   }

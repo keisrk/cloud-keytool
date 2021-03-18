@@ -4,6 +4,7 @@ import static io.atlassian.fugue.Option.option;
 
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import net.codekata.cloudkeytool.KeyStoreDeserializer;
@@ -28,7 +29,8 @@ public final class AwsKeyStoreService implements KeyStoreService {
     this.region = region;
   }
 
-  public final CompletableFuture<KeyStore> getKeyStore(String secretId, String password) {
+  public final CompletableFuture<KeyStore> getKeyStore(
+      String secretId, PasswordProtection password) {
     return getSecretBinary(secretId)
         .thenCompose(
             is ->

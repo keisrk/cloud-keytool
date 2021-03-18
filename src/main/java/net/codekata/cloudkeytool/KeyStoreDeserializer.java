@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
 import java.security.KeyStoreException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -22,16 +23,16 @@ import org.slf4j.LoggerFactory;
 
 /** Deserializer for PKCS12 keystore */
 @Builder
-public class KeyStoreDeserializer {
+public final class KeyStoreDeserializer {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(KeyStoreDeserializer.class);
   @Builder.Default private final String keyStoreType = "PKCS12";
   private final InputStream input;
-  private final String password;
+  private final PasswordProtection password;
 
   /** Loads PKCS12 keystore from the given byte stream. */
   private final KeyStore deserializeOrThrow(KeyStore ks)
       throws IOException, GeneralSecurityException {
-    ks.load(input, password.toCharArray());
+    ks.load(input, password.getPassword());
     return ks;
   }
 

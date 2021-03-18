@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,8 @@ import org.slf4j.LoggerFactory;
 public class LocalKeyStoreService implements KeyStoreService {
   private static final Logger logger = LoggerFactory.getLogger(LocalKeyStoreService.class);
 
-  public final CompletableFuture<KeyStore> getKeyStore(String secretId, String password) {
+  public final CompletableFuture<KeyStore> getKeyStore(
+      String secretId, PasswordProtection password) {
     return getSecretBinary(secretId)
         .thenCompose(
             is ->

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 /** Serializer for keystore */
 @Builder
-class KeyStoreSerializer {
+final class KeyStoreSerializer {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(KeyStoreSerializer.class);
   private final KeyStore keyStore;
   private final OutputStream output;

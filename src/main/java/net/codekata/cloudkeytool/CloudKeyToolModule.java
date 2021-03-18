@@ -1,23 +1,41 @@
 package net.codekata.cloudkeytool;
 
+import static io.atlassian.fugue.Option.none;
+import static io.atlassian.fugue.Option.option;
+
 import com.google.inject.AbstractModule;
-import net.codekata.cloudkeytool.aws.AwsSecretsManagerModule;
+import com.google.inject.Provides;
+import io.atlassian.fugue.Option;
+import net.codekata.cloudkeytool.CloudKeyTool.ImportKeyStore;
+import net.codekata.cloudkeytool.CloudKeyTool.ListEntries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** DI */
-public class CloudKeyToolModule extends AbstractModule {
+public final class CloudKeyToolModule extends AbstractModule {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(CloudKeyToolModule.class);
 
   // TODO: Contain command line options.
-  private final String profile;
+  private final Option<ListEntries> listEntries;
+  private final Option<ImportKeyStore> importKeyStore;
 
-  public CloudKeyToolModule(String profile) {
-    this.profile = profile;
+  CloudKeyToolModule(ListEntries listEntries) {
+    this.listEntries = option(listEntries);
+    this.importKeyStore = none();
   }
 
-  @Override
-  protected void configure() {
-    install(new AwsSecretsManagerModule(profile));
+  CloudKeyToolModule(ImportKeyStore importKeyStore) {
+    this.listEntries = none();
+    this.importKeyStore = option(importKeyStore);
+  }
+
+  @Provides
+  public final Option<ListEntries> listEntries() {
+    return listEntries;
+  }
+
+  @Provides
+  public final Option<ImportKeyStore> importKeyStore() {
+    return importKeyStore;
   }
 }
