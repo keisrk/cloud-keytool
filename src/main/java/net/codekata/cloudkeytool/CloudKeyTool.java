@@ -87,21 +87,17 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
 
     final void dump(KeyRepository repo, String alias) {
       final var keyPass = storePass;
-      try {
-        final var certs = repo.certificateChain(alias);
-        final var priv = repo.privateKey(alias, keyPass);
-        logger.info("Entry aliased {}", alias);
+      final var certs = repo.certificateChain(alias);
+      final var priv = repo.privateKey(alias, keyPass);
+      logger.info("Entry aliased {}", alias);
 
-        for (var cert : certs) {
-          logger.info("Certificate of {}, {}", cert.getPublicKey().getAlgorithm(), cert.getType());
-        }
+      for (var cert : certs) {
+        logger.info("Certificate of {}, {}", cert.getPublicKey().getAlgorithm(), cert.getType());
+      }
 
-        // TODO: Report failure
-        for (var p : priv) {
-          logger.info("Private key of {}, {}", p.getAlgorithm(), p.getFormat());
-        }
-      } catch (Exception e) {
-        logger.error(e.getMessage());
+      // TODO: Report failure
+      for (var p : priv) {
+        logger.info("Private key of {}, {}", p.getAlgorithm(), p.getFormat());
       }
     }
   }
