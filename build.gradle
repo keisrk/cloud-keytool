@@ -48,7 +48,7 @@ repositories {
 dependencies {
     // Simple logging framework
     implementation 'org.slf4j:slf4j-api:1.7.30'
-    runtimeOnly 'org.slf4j:slf4j-simple:1.6.1'
+    runtimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 
     // Make Java fluent
     implementation 'io.atlassian.fugue:fugue:4.7.2'

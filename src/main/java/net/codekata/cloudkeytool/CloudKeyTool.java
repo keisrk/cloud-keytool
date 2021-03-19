@@ -1,8 +1,11 @@
 package net.codekata.cloudkeytool;
 
+import static java.util.function.Function.identity;
+
 import io.atlassian.fugue.Option;
-import java.security.KeyStore;
+import io.atlassian.fugue.Unit;
 import java.security.KeyStore.PasswordProtection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 import lombok.Builder;
@@ -10,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Controller for KeyStore entity */
-public final class CloudKeyTool implements Runnable {
+public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(CloudKeyTool.class);
   private final KeyStoreService service;
   private final Option<ListEntries> listEntries;
@@ -27,50 +30,43 @@ public final class CloudKeyTool implements Runnable {
   }
 
   @Override
-  public final void run() {
+  public final CompletableFuture<Unit> call() {
     logger.info("Calling on {}", service.getClass().getSimpleName());
 
     if (listEntries.isDefined()) {
-      listEntries();
+      return listEntries();
     } else if (importKeyStore.isDefined()) {
-      importKeyStore();
+      return importKeyStore();
     } else {
       logger.error("Nothing to do.");
+      return CompletableFuture.failedFuture(new Exception("TODO: Define an exception type."));
     }
   }
 
-  // Model it as a stream of entries?
-  final void listEntries() {
+  final CompletableFuture<Unit> listEntries() {
     /* a.k.a. doPrintEntries */
     final var ls = listEntries.get();
-    service
+    return service
         .getKeyStore(ls.keystore, ls.storePass)
         .thenApplyAsync(
             ks -> {
               logger.info("Successfully loaded {}", ls.keystore);
               final var repo = new KeyRepository(ks);
-              ls.dump(repo);
-              return 0;
-            })
-        .join();
+              return ls.dump(repo);
+            });
   }
 
-  final void importKeyStore() {
+  final CompletableFuture<Unit> importKeyStore() {
     /* a.k.a. doimportKeyStore */
     final var is = importKeyStore.get();
-    service
+    return service
         .getKeyStore(is.srcKeyStore, is.srcStorePass)
-        .thenApply(
+        .thenApplyAsync(
             ks -> {
               logger.info("Successfully loaded {}", is.srcKeyStore);
               return new KeyRepository(ks);
             })
-        .thenCombineAsync(
-            is.getDest(),
-            (src, dst) -> {
-              logger.info("{}, {}", src, dst);
-              return 0;
-            });
+        .thenCombineAsync(is.getDest(), is::update);
   }
 
   @Builder
@@ -84,18 +80,26 @@ public final class CloudKeyTool implements Runnable {
       this.storePass = storePass;
     }
 
-    final void dump(KeyRepository repo) {
+    private final Unit dump(KeyRepository repo) {
       repo.aliases().forEachRemaining(alias -> dump(repo, alias));
+      return Utils.unit();
     }
 
     final void dump(KeyRepository repo, String alias) {
+      final var keyPass = storePass;
       try {
-        final var cert = repo.keyStore().getCertificate(alias);
-        final var priv =
-            ((KeyStore.PrivateKeyEntry) repo.keyStore().getEntry(alias, storePass)).getPrivateKey();
+        final var certs = repo.certificateChain(alias);
+        final var priv = repo.privateKey(alias, keyPass);
         logger.info("Entry aliased {}", alias);
-        logger.info("Certificate of {}, {}", cert.getPublicKey().getAlgorithm(), cert.getType());
-        logger.info("Private key of {}, {}", priv.getAlgorithm(), priv.getFormat());
+
+        for (var cert : certs) {
+          logger.info("Certificate of {}, {}", cert.getPublicKey().getAlgorithm(), cert.getType());
+        }
+
+        // TODO: Report failure
+        for (var p : priv) {
+          logger.info("Private key of {}, {}", p.getAlgorithm(), p.getFormat());
+        }
       } catch (Exception e) {
         logger.error(e.getMessage());
       }
@@ -109,17 +113,24 @@ public final class CloudKeyTool implements Runnable {
     private final String destKeyStore;
     private final PasswordProtection destStorePass;
 
-    final void foo(KeyRepository src, KeyRepository dst) {
+    final Unit update(KeyRepository src, KeyRepository dst) {
+      // Assuming key passwods are the same as store pass.
+      final var srcKeyPass = srcStorePass;
+      final var destKeyPass = destStorePass;
+
+      // According to keytool.html, "The destination entry will be protected
+      // using destkeypass. If destkeypass is not provided, the destination
+      // entry will be protected with the source entry password."
+      // so always try to protect with destKeyPass.
       src.aliases()
           .forEachRemaining(
               alias -> {
-                try {
-                  // FIXME: It should be setKeyEntry. Read the source of keytool.
-                  dst.keyStore().deleteEntry(alias);
-                } catch (Exception e) {
-                  logger.error("Oh no");
-                }
+                final var certs = src.certificateChain(alias);
+                src.privateKey(alias, srcKeyPass)
+                    .flatMap(priv -> dst.store(alias, priv, destKeyPass, certs))
+                    .fold(Utils::throwRuntime, identity());
               });
+      return Utils.unit();
     }
 
     final CompletableFuture<KeyRepository> getDest() {

@@ -49,6 +49,6 @@ public final class KeyStoreDeserializer {
   /** Loads PKCS12 keystore. */
   public final CompletableFuture<KeyStore> deserialize() {
     return supplyAsync(this::deserializeSync)
-        .thenApply(result -> result.fold(Utils::throwRuntime, identity()));
+        .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()));
   }
 }

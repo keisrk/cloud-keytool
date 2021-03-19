@@ -13,4 +13,4 @@ synchronizes it with the local keystore.
 
 .. code:: sh
 
-   $ cloud-keytool -list --keystore codekata.net.p12 --storepass <storepass> --profile <profile>
+   $ cloud-keytool --list --keystore <keystore>.p12 --storepass <storepass> aws --profile <profile>

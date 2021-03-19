@@ -48,7 +48,7 @@ public final class AwsKeyStoreService implements KeyStoreService {
 
     return client
         .getSecretValue(request)
-        .thenApply(v -> option(v.secretBinary()).map(BytesWrapper::asInputStream))
-        .thenApply(opt -> opt.getOrThrow(() -> new RuntimeException("Not present.")));
+        .thenApplyAsync(v -> option(v.secretBinary()).map(BytesWrapper::asInputStream))
+        .thenApplyAsync(opt -> opt.getOrThrow(() -> new RuntimeException("Not present.")));
   }
 }

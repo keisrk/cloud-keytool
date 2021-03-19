@@ -42,8 +42,8 @@ public class LocalKeyStoreService implements KeyStoreService {
     final var path = Paths.get(filePath).toFile();
     final var output = Checked.<File, OutputStream, IOException>lift(FileOutputStream::new);
     return supplyAsync(fromFunction(output, path))
-        .thenApply(result -> result.fold(Utils::throwRuntime, identity()))
-        .thenCompose(
+        .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()))
+        .thenComposeAsync(
             os -> KeyStoreSerializer.builder().output(os).password(password).build().serialize());
   }
 
@@ -51,6 +51,6 @@ public class LocalKeyStoreService implements KeyStoreService {
     final var path = Paths.get(secretId).toFile();
     final var input = Checked.<File, InputStream, IOException>lift(FileInputStream::new);
     return supplyAsync(fromFunction(input, path))
-        .thenApply(result -> result.fold(Utils::throwRuntime, identity()));
+        .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()));
   }
 }

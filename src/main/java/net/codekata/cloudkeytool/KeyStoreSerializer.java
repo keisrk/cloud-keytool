@@ -38,6 +38,6 @@ final class KeyStoreSerializer {
   /** Dumps keystore. */
   public final CompletableFuture<Unit> serialize() {
     return supplyAsync(this::serializeSync)
-        .thenApply(result -> result.fold(Utils::throwRuntime, identity()));
+        .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()));
   }
 }

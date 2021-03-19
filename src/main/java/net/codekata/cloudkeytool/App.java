@@ -3,9 +3,12 @@ package net.codekata.cloudkeytool;
 import static com.google.inject.Guice.createInjector;
 import static com.google.inject.util.Modules.combine;
 import static io.atlassian.fugue.Option.option;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.google.inject.AbstractModule;
+import io.atlassian.fugue.Unit;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import net.codekata.cloudkeytool.aws.AwsSecretsManagerCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +18,10 @@ import picocli.CommandLine.RunAll;
 public final class App {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(App.class);
 
-  private static final void run(CommandLine cmd) throws Exception {
+  private static final CompletableFuture<Unit> run(CommandLine cmd) throws Exception {
     final var sub = cmd.getSubcommands().values().stream().findFirst();
     if (cmd.isUsageHelpRequested() || sub.map(c -> c.isUsageHelpRequested()).orElse(false)) {
-      return;
+      return completedFuture(Utils.unit());
     }
 
     final var keytool =
@@ -29,7 +32,7 @@ public final class App {
             .flatMap(Optional::ofNullable)
             .orElseThrow(() -> new Exception("No provider"));
 
-    createInjector(combine(keytool, provider)).getInstance(CloudKeyTool.class).run();
+    return createInjector(combine(keytool, provider)).getInstance(CloudKeyTool.class).call();
   }
 
   /** Entry point. */
@@ -39,19 +42,12 @@ public final class App {
             .addSubcommand(new AwsSecretsManagerCommand())
             .setExecutionStrategy(new RunAll());
 
-    // Prefer Try<Integer> here.
     try {
       final var exitCode = cmd.execute(args);
       if (exitCode != 0) {
         System.exit(exitCode);
       }
-    } catch (Exception e) {
-      logger.error(e.getMessage());
-      System.exit(1);
-    }
-
-    try {
-      run(cmd);
+      run(cmd).join();
       System.exit(0);
     } catch (Exception e) {
       logger.error(e.getMessage());
