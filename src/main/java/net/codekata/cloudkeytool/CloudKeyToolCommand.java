@@ -45,13 +45,13 @@ final class CloudKeyToolCommand implements Callable<CloudKeyToolModule> {
   @Option(names = "--srckeystore", paramLabel = "SRC_KEYSTORE", description = "The src keystore")
   private Optional<String> srcKeyStore;
 
-  @Option(names = "--srcStorePass", paramLabel = "SRC_STORE_PASSWD", description = "FIXME")
+  @Option(names = "--srcstorepass", paramLabel = "SRC_STORE_PASSWD", description = "FIXME")
   private Optional<String> srcStorePass;
 
   @Option(names = "--destkeystore", paramLabel = "DEST_KEYSTORE", description = "The dest keystore")
   private Optional<String> destKeyStore;
 
-  @Option(names = "--destStorePass", paramLabel = "DEST_STORE_PASSWD", description = "FIXME")
+  @Option(names = "--deststorepass", paramLabel = "DEST_STORE_PASSWD", description = "FIXME")
   private Optional<String> destStorePass;
 
   private static final PasswordProtection password(Optional<String> passwd) {

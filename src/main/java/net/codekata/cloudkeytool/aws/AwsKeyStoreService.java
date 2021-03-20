@@ -32,7 +32,7 @@ public final class AwsKeyStoreService implements KeyStoreService {
   public final CompletableFuture<KeyStore> getKeyStore(
       String secretId, PasswordProtection password) {
     return getSecretBinary(secretId)
-        .thenCompose(
+        .thenComposeAsync(
             is ->
                 KeyStoreDeserializer.builder().input(is).password(password).build().deserialize());
   }

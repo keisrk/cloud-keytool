@@ -31,7 +31,7 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
 
   @Override
   public final CompletableFuture<Unit> call() {
-    logger.info("Calling on {}", service.getClass().getSimpleName());
+    logger.info("Calling on {}.", service.getClass().getSimpleName());
 
     if (listEntries.isDefined()) {
       return listEntries();
@@ -50,7 +50,7 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
         .getKeyStore(ls.keystore, ls.storePass)
         .thenApplyAsync(
             ks -> {
-              logger.info("Successfully loaded {}", ls.keystore);
+              logger.info("Successfully loaded {}.", ls.keystore);
               final var repo = new KeyRepository(ks);
               return ls.dump(repo);
             });
@@ -63,10 +63,13 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
         .getKeyStore(is.srcKeyStore, is.srcStorePass)
         .thenApplyAsync(
             ks -> {
-              logger.info("Successfully loaded {}", is.srcKeyStore);
+              logger.info("Successfully loaded {}, {}.", is.srcKeyStore, ks.getType());
               return new KeyRepository(ks);
             })
-        .thenCombineAsync(is.getDest(), is::update);
+        .thenCombineAsync(is.getDest(), is::update)
+        .thenComposeAsync(
+            ks ->
+                new LocalKeyStoreService().store(ks.keyStore(), is.destKeyStore, is.destStorePass));
   }
 
   @Builder
@@ -89,15 +92,15 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
       final var keyPass = storePass;
       final var certs = repo.certificateChain(alias);
       final var priv = repo.privateKey(alias, keyPass);
-      logger.info("Entry aliased {}", alias);
+      logger.info("Entry aliased {}.", alias);
 
       for (var cert : certs) {
-        logger.info("Certificate of {}, {}", cert.getPublicKey().getAlgorithm(), cert.getType());
+        logger.info("Certificate of {}, {}.", cert.getPublicKey().getAlgorithm(), cert.getType());
       }
 
       // TODO: Report failure
       for (var p : priv) {
-        logger.info("Private key of {}, {}", p.getAlgorithm(), p.getFormat());
+        logger.info("Private key of {}, {}.", p.getAlgorithm(), p.getFormat());
       }
     }
   }
@@ -109,7 +112,7 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
     private final String destKeyStore;
     private final PasswordProtection destStorePass;
 
-    final Unit update(KeyRepository src, KeyRepository dst) {
+    final KeyRepository update(KeyRepository src, KeyRepository dst) {
       // Assuming key passwods are the same as store pass.
       final var srcKeyPass = srcStorePass;
       final var destKeyPass = destStorePass;
@@ -122,11 +125,17 @@ public final class CloudKeyTool implements Callable<CompletableFuture<Unit>> {
           .forEachRemaining(
               alias -> {
                 final var certs = src.certificateChain(alias);
+                logger.info("Extracted certs from {}.", alias);
                 src.privateKey(alias, srcKeyPass)
                     .flatMap(priv -> dst.store(alias, priv, destKeyPass, certs))
+                    .map(
+                        v -> {
+                          logger.info("Successfully updated {} to {}.", alias, destKeyStore);
+                          return v;
+                        })
                     .fold(Utils::throwRuntime, identity());
               });
-      return Utils.unit();
+      return dst;
     }
 
     final CompletableFuture<KeyRepository> getDest() {

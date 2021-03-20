@@ -17,7 +17,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Wraper type around KeyStore. */
+/** Wrapper type around KeyStore. */
 final class KeyRepository {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(KeyRepository.class);
   private final KeyStore ks;
@@ -53,9 +53,13 @@ final class KeyRepository {
 
   final Try<Unit> store(
       String alias, PrivateKey priv, PasswordProtection keyPass, List<Certificate> certs) {
+    final var cs = certs.toArray(Certificate[]::new);
     return now(
         () -> {
-          ks.setKeyEntry(alias, priv, keyPass.getPassword(), certs.toArray(Certificate[]::new));
+          ks.setKeyEntry(alias, priv, keyPass.getPassword(), cs);
+          for (var c : cs) {
+            logger.info("Stored {} cert.", c.getType());
+          }
           return Utils.unit();
         });
   }

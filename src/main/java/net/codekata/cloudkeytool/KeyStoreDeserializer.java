@@ -33,6 +33,7 @@ public final class KeyStoreDeserializer {
   private final KeyStore deserializeOrThrow(KeyStore ks)
       throws IOException, GeneralSecurityException {
     ks.load(input, password.getPassword());
+    logger.info("Loaded {}.", ks.getType());
     return ks;
   }
 

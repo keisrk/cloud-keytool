@@ -48,6 +48,7 @@ public final class App {
         System.exit(exitCode);
       }
       run(cmd).join();
+      logger.info("Command completed.");
       System.exit(0);
     } catch (Exception e) {
       logger.error(e.getMessage());

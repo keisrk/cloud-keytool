@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 public final class CloudKeyToolModule extends AbstractModule {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(CloudKeyToolModule.class);
 
-  // TODO: Contain command line options.
   private final Option<ListEntries> listEntries;
   private final Option<ImportKeyStore> importKeyStore;
 

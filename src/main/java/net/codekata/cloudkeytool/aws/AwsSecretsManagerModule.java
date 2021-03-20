@@ -20,6 +20,7 @@ public final class AwsSecretsManagerModule extends AbstractModule {
   private final String profile;
 
   public AwsSecretsManagerModule(String profile) {
+    // TODO: What if profile is None?
     this.profile = profile;
   }
 
@@ -28,13 +29,11 @@ public final class AwsSecretsManagerModule extends AbstractModule {
     bind(KeyStoreService.class).to(AwsKeyStoreService.class);
   }
 
-  // What if profile is None?
   @Provides
   public final AwsCredentialsProvider getCredentials() {
     return ProfileCredentialsProvider.create(profile);
   }
 
-  // What if profile is None?
   @Provides
   public final Region getRegion() {
     return fromOptional(ProfileFile.defaultProfileFile().profile(profile))

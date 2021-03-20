@@ -26,25 +26,42 @@ public class LocalKeyStoreService implements KeyStoreService {
   public final CompletableFuture<KeyStore> getKeyStore(
       String secretId, PasswordProtection password) {
     return getSecretBinary(secretId)
-        .thenCompose(
-            is ->
-                KeyStoreDeserializer.builder()
-                    // TODO: Judge keystore type from file extension or file's naming convention.
-                    .keyStoreType("JKS")
-                    .input(is)
-                    .password(password)
-                    .build()
-                    .deserialize());
+        .thenComposeAsync(
+            is -> {
+              logger.info("Created input stream from local file.");
+              return KeyStoreDeserializer.builder()
+                  // TODO: Judge keystore type from file extension or file's naming convention.
+                  .keyStoreType("JKS")
+                  .input(is)
+                  .password(password)
+                  .build()
+                  .deserialize();
+            });
   }
 
   /** TODO: Elaborate API from existing examples. */
-  public final CompletableFuture<Unit> store(KeyStore ks, String filePath, String password) {
-    final var path = Paths.get(filePath).toFile();
+  public final CompletableFuture<Unit> store(
+      KeyStore ks, String filePath, PasswordProtection password) {
+    final var temp = Paths.get(filePath + ".bak").toFile();
     final var output = Checked.<File, OutputStream, IOException>lift(FileOutputStream::new);
-    return supplyAsync(fromFunction(output, path))
+    final var overwrite = Checked.<File, Boolean, IOException>lift(temp::renameTo);
+    return supplyAsync(fromFunction(output, temp))
         .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()))
         .thenComposeAsync(
-            os -> KeyStoreSerializer.builder().output(os).password(password).build().serialize());
+            os ->
+                KeyStoreSerializer.builder()
+                    .keyStore(ks)
+                    .output(os)
+                    .password(password)
+                    .build()
+                    .serialize())
+        .thenComposeAsync(
+            u -> {
+              final var path = Paths.get(filePath).toFile();
+              return supplyAsync(fromFunction(overwrite, path))
+                  .thenApplyAsync(result -> result.fold(Utils::throwRuntime, identity()))
+                  .thenApplyAsync(result -> Utils.unit());
+            });
   }
 
   private final CompletableFuture<InputStream> getSecretBinary(String secretId) {

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStore.PasswordProtection;
 import java.util.concurrent.CompletableFuture;
 import lombok.Builder;
 import org.slf4j.Logger;
@@ -22,11 +23,12 @@ final class KeyStoreSerializer {
   private static final Logger logger = (Logger) LoggerFactory.getLogger(KeyStoreSerializer.class);
   private final KeyStore keyStore;
   private final OutputStream output;
-  private final String password;
+  private final PasswordProtection password;
 
   /** Dumps keystore to the given byte stream. */
   private final Unit deserializeOrThrow() throws IOException, GeneralSecurityException {
-    keyStore.store(output, password.toCharArray());
+    keyStore.store(output, password.getPassword());
+    logger.info("Stored {}.", keyStore.getType());
     return unit();
   }
 
