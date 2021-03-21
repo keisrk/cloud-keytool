@@ -1,5 +1,6 @@
 package net.codekata.cloudkeytool;
 
+import java.nio.file.Paths;
 import java.security.KeyStore.PasswordProtection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -42,25 +43,41 @@ final class CloudKeyToolCommand implements Callable<CloudKeyToolModule> {
   private Optional<String> storePass;
 
   // --importkeystore from cloud services to local file system.
-  @Option(names = "--srckeystore", paramLabel = "SRC_KEYSTORE", description = "The src keystore")
+  @Option(
+      names = "--srckeystore",
+      paramLabel = "SRC_KEYSTORE",
+      description = "source keystore name")
   private Optional<String> srcKeyStore;
 
-  @Option(names = "--srcstorepass", paramLabel = "SRC_STORE_PASSWD", description = "FIXME")
+  @Option(
+      names = "--srcstorepass",
+      paramLabel = "SRC_STORE_PASSWD",
+      description = "source keystore password")
   private Optional<String> srcStorePass;
 
-  @Option(names = "--destkeystore", paramLabel = "DEST_KEYSTORE", description = "The dest keystore")
+  @Option(
+      names = "--destkeystore",
+      paramLabel = "DEST_KEYSTORE",
+      description = "destination keystore name")
   private Optional<String> destKeyStore;
 
-  @Option(names = "--deststorepass", paramLabel = "DEST_STORE_PASSWD", description = "FIXME")
+  @Option(
+      names = "--deststorepass",
+      paramLabel = "DEST_STORE_PASSWD",
+      description = "destination keystore password")
   private Optional<String> destStorePass;
 
   private static final PasswordProtection password(Optional<String> passwd) {
+    return password(passwd, "");
+  }
+
+  private static final PasswordProtection password(Optional<String> passwd, String prompt) {
     return passwd
         .map(p -> new PasswordProtection(p.toCharArray()))
         .orElseGet(
             () ->
                 new PasswordProtection(
-                    System.console().readPassword("[%s]", "Keystore password:")));
+                    System.console().readPassword("%s keystore password:", prompt)));
   }
 
   @Override
@@ -73,12 +90,14 @@ final class CloudKeyToolCommand implements Callable<CloudKeyToolModule> {
       return new CloudKeyToolModule(new ListEntries(ks, pw));
     } else {
       // Handle the case of --importkeystore.
+      final var dest =
+          destKeyStore.orElse(Paths.get(System.getProperty("user.home"), ".keystore").toString());
       final var importKeyStore =
           ImportKeyStore.builder()
-              .srcKeyStore(srcKeyStore.orElseThrow(() -> new Exception("No src keystore")))
-              .srcStorePass(password(srcStorePass))
-              .destKeyStore(destKeyStore.orElseThrow(() -> new Exception("No dest keystore")))
-              .destStorePass(password(destStorePass))
+              .srcKeyStore(srcKeyStore.orElseThrow(() -> new Exception("No source keystore")))
+              .srcStorePass(password(srcStorePass, "Source"))
+              .destKeyStore(dest)
+              .destStorePass(password(destStorePass, "Destination"))
               .build();
       return new CloudKeyToolModule(importKeyStore);
     }
